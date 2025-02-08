@@ -1,0 +1,129 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectItem, SelectContent, SelectTrigger } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { motion } from "framer-motion";
+
+export default function RentNGo() {
+  const [listings, setListings] = useState([
+    { id: 1, title: "Bike for Rent", price: "$10/day", owner: "John Doe", type: "rent", discount: "", image: "bike.jpg", description: "A sturdy mountain bike, perfect for trails.", location: "New York" },
+    { id: 2, title: "Camera for Sale", price: "$250", owner: "Jane Smith", type: "sale", discount: "", image: "camera.jpg", description: "A high-quality DSLR camera with multiple lenses.", location: "Los Angeles" },
+  ]);
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [filter, setFilter] = useState("all");
+  const [subscription, setSubscription] = useState(false);
+  const [cart, setCart] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userLocation, setUserLocation] = useState(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error fetching location:", error);
+        }
+      );
+    }
+  }, []);
+
+  const filteredListings = listings.filter(item => 
+    (filter === "all" || item.type === filter) && 
+    item.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleSubscription = () => {
+    setSubscription(true);
+  };
+  
+  const handlePurchase = (listing) => {
+    if (!subscription) {
+      alert("$1 fee applied per transaction. Subscribe for $14.99/month to waive fees.");
+    }
+    setCart([...cart, listing]);
+  };
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-3xl font-bold mb-4">Rent-n-Go</h1>
+      <p className="text-gray-600 mb-6">Buy or rent items from people near you.</p>
+      
+      <Input 
+        className="mb-4" 
+        placeholder="Search for items..." 
+        value={searchQuery} 
+        onChange={(e) => setSearchQuery(e.target.value)} 
+      />
+      
+      {selectedListing ? (
+        <div className="p-6 border rounded shadow-lg">
+          <h2 className="text-2xl font-bold">{selectedListing.title}</h2>
+          <img src={selectedListing.image} alt={selectedListing.title} className="mb-2 w-full h-48 object-cover" />
+          <p className="text-gray-600">Price: {selectedListing.price}</p>
+          {selectedListing.discount && <p className="text-red-500">Discount: {selectedListing.discount}% off</p>}
+          <p className="text-gray-500">Owner: {selectedListing.owner}</p>
+          <p className="text-gray-500">Type: {selectedListing.type}</p>
+          <p className="text-gray-600">{selectedListing.description}</p>
+          <Button className="mt-3 w-full" onClick={() => handlePurchase(selectedListing)}>Buy / Rent</Button>
+          <Button className="mt-3 w-full bg-gray-500" onClick={() => setSelectedListing(null)}>Back to Listings</Button>
+        </div>
+      ) : (
+        <>
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold">Filter Listings</h2>
+            <Select onValueChange={setFilter} value={filter}>
+              <SelectTrigger>{filter}</SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="rent">Rent</SelectItem>
+                <SelectItem value="sale">Sale</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {filteredListings.map((item) => (
+              <motion.div key={item.id} whileHover={{ scale: 1.05 }}>
+                <Card className="p-4 shadow-lg cursor-pointer" onClick={() => setSelectedListing(item)}>
+                  <CardContent>
+                    <img src={item.image} alt={item.title} className="mb-2 w-full h-32 object-cover" />
+                    <h2 className="text-xl font-semibold">{item.title}</h2>
+                    <p className="text-gray-500">Price: {item.price}</p>
+                    {item.discount && <p className="text-red-500">Discount: {item.discount}% off</p>}
+                    <p className="text-gray-400 text-sm">Owner: {item.owner}</p>
+                    <p className="text-gray-500">Type: {item.type}</p>
+                    <Button className="mt-2 w-full" onClick={() => handlePurchase(item)}>Add to Cart / Rent</Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </>
+      )}
+      
+      <div className="mt-6 p-4 border rounded shadow-lg">
+        <h2 className="text-xl font-semibold">Shopping Cart</h2>
+        {cart.length > 0 ? (
+          cart.map((item, index) => (
+            <p key={index} className="text-gray-600">{item.title} - {item.price}</p>
+          ))
+        ) : (
+          <p className="text-gray-400">Your cart is empty.</p>
+        )}
+      </div>
+      
+      <div className="mt-6 p-4 border rounded shadow-lg">
+        <h2 className="text-xl font-semibold">Customer Support</h2>
+        <Textarea placeholder="Ask our staff a question..." className="mt-2" />
+        <Button className="mt-2">Send Message</Button>
+      </div>
+    </div>
+  );
+}
