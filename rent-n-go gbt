@@ -5,19 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectItem, SelectContent, SelectTrigger } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
+import axios from "axios";
 
 export default function RentNGo() {
-  const [listings, setListings] = useState([
-    { id: 1, title: "Bike for Rent", price: "$10/day", owner: "John Doe", type: "rent", discount: "", image: "bike.jpg", description: "A sturdy mountain bike, perfect for trails.", location: "New York" },
-    { id: 2, title: "Camera for Sale", price: "$250", owner: "Jane Smith", type: "sale", discount: "", image: "camera.jpg", description: "A high-quality DSLR camera with multiple lenses.", location: "Los Angeles" },
-  ]);
+  const [listings, setListings] = useState([]);
   const [selectedListing, setSelectedListing] = useState(null);
   const [filter, setFilter] = useState("all");
   const [subscription, setSubscription] = useState(false);
   const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [userLocation, setUserLocation] = useState(null);
-
+  
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -33,21 +31,37 @@ export default function RentNGo() {
       );
     }
   }, []);
-
+  
+  useEffect(() => {
+    axios.get("/api/listings").then((response) => {
+      setListings(response.data);
+    });
+  }, []);
+  
   const filteredListings = listings.filter(item => 
     (filter === "all" || item.type === filter) && 
     item.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSubscription = () => {
-    setSubscription(true);
+  const handleSubscription = async () => {
+    const response = await axios.post("/api/subscribe");
+    if (response.data.success) {
+      setSubscription(true);
+    }
   };
   
-  const handlePurchase = (listing) => {
+  const handlePurchase = async (listing) => {
     if (!subscription) {
       alert("$1 fee applied per transaction. Subscribe for $14.99/month to waive fees.");
     }
     setCart([...cart, listing]);
+  };
+  
+  const handleNewListing = async (newItem) => {
+    const response = await axios.post("/api/listings", newItem);
+    if (response.data.success) {
+      setListings([...listings, newItem]);
+    }
   };
 
   return (
